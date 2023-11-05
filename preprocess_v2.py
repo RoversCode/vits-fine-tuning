@@ -6,7 +6,7 @@ sys.setrecursionlimit(500000)  # Fix the error message of RecursionError: maximu
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--add_auxiliary_data", type=bool, help="Whether to add extra data as fine-tuning helper")
+    parser.add_argument("--add_auxiliary_data", type=bool,default=True, help="Whether to add extra data as fine-tuning helper")
     parser.add_argument("--languages", default="CJE")
     args = parser.parse_args()
     if args.languages == "CJE":
@@ -36,7 +36,7 @@ if __name__ == "__main__":
     assert (len(speakers) != 0), "No audio file found. Please check your uploaded file structure."
     # Source 3 (Optional): sampled audios as extra training helpers
     if args.add_auxiliary_data:
-        with open("./sampled_audio4ft.txt", 'r', encoding='utf-8') as f:
+        with open("./data/sampled_audio4ft.txt", 'r', encoding='utf-8') as f:
             old_annos = f.readlines()
         # filter old_annos according to supported languages
         filtered_old_annos = []

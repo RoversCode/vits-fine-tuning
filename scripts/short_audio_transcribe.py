@@ -6,10 +6,13 @@ import argparse
 import torch
 
 lang2token = {
-            'zh': "[ZH]",
-            'ja': "[JA]",
-            "en": "[EN]",
-        }
+    'zh': "[ZH]",
+    'ja': "[JA]",
+    "en": "[EN]",
+}
+
+parent_dir = "./data/custom_character_voice/"
+
 def transcribe_one(audio_path):
     # load audio and pad/trim it to fit 30 seconds
     audio = whisper.load_audio(audio_path)
@@ -29,10 +32,12 @@ def transcribe_one(audio_path):
     # print the recognized text
     print(result.text)
     return lang, result.text
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--languages", default="CJE")
-    parser.add_argument("--whisper_size", default="medium")
+    parser.add_argument("--whisper_size", default="/ssd_disk/code/pretrained/torch/audio/whisper_pretrain_model/large-v2.pt")
     args = parser.parse_args()
     if args.languages == "CJE":
         lang2token = {
@@ -49,9 +54,9 @@ if __name__ == "__main__":
         lang2token = {
             'zh': "[ZH]",
         }
-    assert (torch.cuda.is_available()), "Please enable GPU in order to run Whisper!"
+    assert (torch.cuda.is_available()
+            ), "Please enable GPU in order to run Whisper!"
     model = whisper.load_model(args.whisper_size)
-    parent_dir = "./custom_character_voice/"
     speaker_names = list(os.walk(parent_dir))[0][1]
     speaker_annos = []
     total_files = sum([len(files) for r, d, files in os.walk(parent_dir)])
@@ -67,11 +72,15 @@ if __name__ == "__main__":
             if wavfile.startswith("processed_"):
                 continue
             try:
-                wav, sr = torchaudio.load(parent_dir + speaker + "/" + wavfile, frame_offset=0, num_frames=-1, normalize=True,
+                wav, sr = torchaudio.load(parent_dir + speaker + "/" + wavfile,
+                                          frame_offset=0,
+                                          num_frames=-1,
+                                          normalize=True,
                                           channels_first=True)
                 wav = wav.mean(dim=0).unsqueeze(0)
                 if sr != target_sr:
-                    wav = torchaudio.transforms.Resample(orig_freq=sr, new_freq=target_sr)(wav)
+                    wav = torchaudio.transforms.Resample(
+                        orig_freq=sr, new_freq=target_sr)(wav)
                 if wav.shape[1] / sr > 20:
                     print(f"{wavfile} too long, ignoring\n")
                 save_path = parent_dir + speaker + "/" + f"processed_{i}.wav"
@@ -83,7 +92,7 @@ if __name__ == "__main__":
                     continue
                 text = lang2token[lang] + text + lang2token[lang] + "\n"
                 speaker_annos.append(save_path + "|" + speaker + "|" + text)
-                
+
                 processed_files += 1
                 print(f"Processed: {processed_files}/{total_files}")
             except:
@@ -100,8 +109,12 @@ if __name__ == "__main__":
     #     speaker_annos[i] = path + "|" + sid + "|" + cleaned_text
     # write into annotation
     if len(speaker_annos) == 0:
-        print("Warning: no short audios found, this IS expected if you have only uploaded long audios, videos or video links.")
-        print("this IS NOT expected if you have uploaded a zip file of short audios. Please check your file structure or make sure your audio language is supported.")
+        print(
+            "Warning: no short audios found, this IS expected if you have only uploaded long audios, videos or video links."
+        )
+        print(
+            "this IS NOT expected if you have uploaded a zip file of short audios. Please check your file structure or make sure your audio language is supported."
+        )
     with open("short_character_anno.txt", 'w', encoding='utf-8') as f:
         for line in speaker_annos:
             f.write(line)
